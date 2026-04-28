@@ -1,0 +1,14 @@
+version: '3.8'
+services:
+  app:
+    build: .
+    ports:
+      - "3000:3000"
+    volumes:
+      - recipe-data:/app/data
+      - recipe-uploads:/app/uploads
+    restart: unless-stopped
+
+volumes:
+  recipe-data:
+  recipe-uploads:
