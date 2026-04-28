@@ -1,0 +1,99 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Meal Planner</title>
+  <link rel="stylesheet" href="/css/style.css">
+</head>
+<body>
+  <nav><div class="container"><h1><a href="/">🍳 Recipe App</a></h1><ul><li><a href="/">Recipes</a></li><li><a href="/planner.html">Meal Planner</a></li><li><a href="/add.html" class="btn btn-primary">+ Add Recipe</a></li></ul></div></nav>
+  <div class="container">
+    <div class="hero"><h2>Weekly Meal Planner</h2><p>Plan your meals for the week</p></div>
+    <div style="text-align:right;margin-bottom:16px"><button onclick="clearPlan()" class="btn btn-danger">Clear All</button></div>
+    <div class="planner-grid" id="planner-grid"></div>
+  </div>
+
+  <!-- Modal for assigning recipe -->
+  <div id="modal" class="modal" style="display:none">
+    <div class="modal-content">
+      <h3>Choose a Recipe</h3>
+      <input type="text" id="modal-search" placeholder="Search recipes..." class="search-input">
+      <div id="modal-recipes" class="modal-recipes"></div>
+      <button onclick="closeModal()" class="btn btn-secondary" style="margin-top:12px">Cancel</button>
+    </div>
+  </div>
+
+  <script>
+    const DAYS = ['Monday','Tuesday','Wednesday','Thursday','Friday','Saturday','Sunday'];
+    const MEALS = ['breakfast','lunch','dinner'];
+    let allRecipes = [], planData = [], modalDay = '', modalMeal = '';
+
+    async function api(url, opts) { const r = await fetch(url, opts); return r.json(); }
+
+    async function init() {
+      [allRecipes, planData] = await Promise.all([api('/api/recipes'), api('/api/planner')]);
+      render();
+    }
+
+    function render() {
+      const grid = document.getElementById('planner-grid');
+      grid.innerHTML = `
+        <div class="planner-header"><div></div>${DAYS.map(d => `<div>${d}</div>`).join('')}</div>
+        ${MEALS.map(meal => `
+          <div class="planner-row">
+            <div class="meal-label">${meal.charAt(0).toUpperCase() + meal.slice(1)}</div>
+            ${DAYS.map(day => {
+              const items = planData.filter(p => p.day === day && p.meal === meal);
+              return `<div class="planner-cell" onclick="openModal('${day}','${meal}')">
+                ${items.map(i => `<div class="plan-item"><span>${i.title}</span><button onclick="event.stopPropagation();removePlan(${i.id})" class="remove-btn">×</button></div>`).join('')}
+                <div class="add-hint">+</div>
+              </div>`;
+            }).join('')}
+          </div>
+        `).join('')}
+      `;
+    }
+
+    function openModal(day, meal) {
+      modalDay = day; modalMeal = meal;
+      document.getElementById('modal').style.display = 'flex';
+      renderModalRecipes('');
+      document.getElementById('modal-search').value = '';
+      document.getElementById('modal-search').focus();
+      document.getElementById('modal-search').oninput = (e) => renderModalRecipes(e.target.value);
+    }
+
+    function renderModalRecipes(q) {
+      const filtered = q ? allRecipes.filter(r => r.title.toLowerCase().includes(q.toLowerCase())) : allRecipes;
+      document.getElementById('modal-recipes').innerHTML = filtered.length
+        ? filtered.map(r => `<div class="modal-recipe-item" onclick="assignRecipe(${r.id})"><span class="badge">${r.category||'dinner'}</span> ${r.title}</div>`).join('')
+        : '<p style="color:#999">No recipes found</p>';
+    }
+
+    function closeModal() { document.getElementById('modal').style.display = 'none'; }
+
+    async function assignRecipe(recipeId) {
+      await api('/api/planner', { method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify({ recipe_id: recipeId, day: modalDay, meal: modalMeal }) });
+      closeModal();
+      planData = await api('/api/planner');
+      render();
+    }
+
+    async function removePlan(id) {
+      await api(`/api/planner/${id}`, { method: 'DELETE' });
+      planData = await api('/api/planner');
+      render();
+    }
+
+    async function clearPlan() {
+      if (!confirm('Clear the entire meal plan?')) return;
+      await api('/api/planner', { method: 'DELETE' });
+      planData = [];
+      render();
+    }
+
+    init();
+  </script>
+</body>
+</html>
