@@ -10,6 +10,17 @@
   <nav><div class="container"><h1><a href="/">🍳 Recipe App</a></h1><ul><li><a href="/">Recipes</a></li><li><a href="/planner.html">Meal Planner</a></li><li><a href="/add.html" class="btn btn-primary">+ Add Recipe</a></li></ul></div></nav>
   <div class="container">
     <div class="hero"><h2>My Recipes</h2><p>Browse and manage your recipe collection</p></div>
+    <div class="filters">
+      <input type="text" id="search-input" placeholder="Search recipes..." class="search-input">
+      <div class="category-filters">
+        <button class="cat-btn active" data-cat="">All</button>
+        <button class="cat-btn" data-cat="breakfast">Breakfast</button>
+        <button class="cat-btn" data-cat="lunch">Lunch</button>
+        <button class="cat-btn" data-cat="dinner">Dinner</button>
+        <button class="cat-btn" data-cat="dessert">Dessert</button>
+        <button class="cat-btn" data-cat="snack">Snack</button>
+      </div>
+    </div>
     <div id="recipes-grid" class="recipes-grid"></div>
   </div>
   <script src="/js/app.js"></script>

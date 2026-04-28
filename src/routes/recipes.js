@@ -15,10 +15,15 @@ const storage = multer.diskStorage({
 });
 const upload = multer({ storage });
 
-// List all recipes
+// List recipes with optional search and category filter
 router.get('/', (req, res) => {
-  const recipes = db.prepare('SELECT * FROM recipes ORDER BY created_at DESC').all();
-  res.json(recipes);
+  const { q, category } = req.query;
+  let sql = 'SELECT * FROM recipes WHERE 1=1';
+  const params = [];
+  if (q) { sql += ' AND (title LIKE ? OR description LIKE ? OR ingredients LIKE ?)'; params.push(`%${q}%`, `%${q}%`, `%${q}%`); }
+  if (category) { sql += ' AND category = ?'; params.push(category); }
+  sql += ' ORDER BY created_at DESC';
+  res.json(db.prepare(sql).all(...params));
 });
 
 // Get single recipe

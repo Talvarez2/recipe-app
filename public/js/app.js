@@ -16,12 +16,18 @@ function timeStr(mins) {
 }
 
 // --- Index page ---
-async function loadRecipes() {
+let currentCategory = '';
+let searchTimeout;
+
+async function loadRecipes(q = '', category = '') {
   const grid = document.getElementById('recipes-grid');
   if (!grid) return;
-  const recipes = await api(API);
+  const params = new URLSearchParams();
+  if (q) params.set('q', q);
+  if (category) params.set('category', category);
+  const recipes = await api(`${API}?${params}`);
   if (!recipes.length) {
-    grid.innerHTML = '<div class="empty"><p>No recipes yet!</p><a href="/add.html" class="btn btn-primary">Add Your First Recipe</a></div>';
+    grid.innerHTML = '<div class="empty"><p>No recipes found.</p><a href="/add.html" class="btn btn-primary">Add Your First Recipe</a></div>';
     return;
   }
   grid.innerHTML = recipes.map(r => `
@@ -39,6 +45,23 @@ async function loadRecipes() {
       </div>
     </a>
   `).join('');
+}
+
+function initFilters() {
+  const searchInput = document.getElementById('search-input');
+  if (!searchInput) return;
+  searchInput.addEventListener('input', () => {
+    clearTimeout(searchTimeout);
+    searchTimeout = setTimeout(() => loadRecipes(searchInput.value, currentCategory), 300);
+  });
+  document.querySelectorAll('.cat-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      document.querySelectorAll('.cat-btn').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      currentCategory = btn.dataset.cat;
+      loadRecipes(searchInput.value, currentCategory);
+    });
+  });
 }
 
 // --- Recipe detail page ---
@@ -104,6 +127,7 @@ async function initForm() {
 // Init
 document.addEventListener('DOMContentLoaded', () => {
   loadRecipes();
+  initFilters();
   loadRecipe();
   initForm();
 });
